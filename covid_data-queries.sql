@@ -82,9 +82,7 @@ ORDER BY 2,3
 --RollingPeopleVaccinated/population won't work cuz you cant use a calculated column 
 --in another calculation. Therefore we need to use a CTE (Common Table Expression)
 
-WITH PopVsVac (dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations, RollingPeopleVaccinated) AS
---no. of columns in CTE must equal number of columns in query table below
-
+WITH PopVsVac (dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations, RollingPeopleVaccinated) AS --no. of columns in CTE must equal number of columns in query table below
 (
     SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
         SUM(vac.new_vaccinations) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date) AS RollingPeopleVaccinated
@@ -127,7 +125,8 @@ FROM PercentPopulationVaccinated
 
 
 
---Creating Views to store data and produce visualizations in Tableau
+--CREATING VIEW to store data and produce visualizations in Tableau
+--View 1
 
 CREATE VIEW PercentPopulationVaccinated AS
 SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
@@ -139,7 +138,21 @@ WHERE dea.continent IS NOT NULL
 --ORDER BY 2,3
 
 
+--View 2
+CREATE VIEW RollingSumVaccinated AS
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+        SUM(vac.new_vaccinations) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date) AS RollingPeopleVaccinated
+FROM `decent-blade-328116.portfolio_project.Covid_deaths` dea
+JOIN `decent-blade-328116.portfolio_project.covid_vaccinations` vac
+ON dea.location = vac.location AND dea.date = vac.date
+WHERE dea.continent IS NOT NULL
+ORDER BY 2,3
 
-
-
-
+--View 3
+CREATE VIEW GlobalFigures AS
+SELECT date, SUM(new_cases) AS Total_Cases, SUM(new_deaths) AS Total_deaths, 
+    (SUM(new_deaths)/SUM(new_cases))*100 AS Percentage_Deaths
+FROM `decent-blade-328116.portfolio_project.Covid_deaths`
+WHERE continent IS NOT NUll AND Total_Cases IS NOT NULL
+GROUP BY date
+ORDER BY date, Total_deaths 
